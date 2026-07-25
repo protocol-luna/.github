@@ -1,6 +1,6 @@
 # Protocol Luna
 
-Autonomous, sentient-like Discord bot powered by local LLM inference.
+Autonomous, sentient-like bots powered by local LLM inference. Discord (jade) and Matrix (pixieglow).
 
 ## Projects
 
@@ -8,6 +8,7 @@ Autonomous, sentient-like Discord bot powered by local LLM inference.
 |---------|-------------|-------|
 | [krystal](https://github.com/protocol-luna/krystal) | LLM inference server | llama.cpp (C++), PM2 |
 | [jade](https://github.com/protocol-luna/jade) | Discord bot client | TypeScript, Eris, esbuild |
+| [pixieglow](https://github.com/protocol-luna/pixieglow) | Matrix bot | TypeScript, Bun |
 
 ## Architecture
 
