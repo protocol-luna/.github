@@ -6,7 +6,8 @@ Autonomous, sentient-like bots powered by local LLM inference. Discord (jade) an
 
 | Project | Description | Stack |
 |---------|-------------|-------|
-| [krystal](https://github.com/protocol-luna/krystal) | LLM inference server | llama.cpp (C++), PM2 |
+| [sapphire](https://github.com/protocol-luna/sapphire) | LLM gateway (classification + routing) | Python, fastembed, FastAPI |
+| [krystal](https://github.com/protocol-luna/krystal) | LLM inference server (small/large mode) | llama.cpp (C++), PM2 |
 | [jade](https://github.com/protocol-luna/jade) | Discord bot client | TypeScript, Eris, esbuild |
 | [pixieglow](https://github.com/protocol-luna/pixieglow) | Matrix bot | TypeScript, Bun |
 
@@ -18,17 +19,23 @@ Autonomous, sentient-like bots powered by local LLM inference. Discord (jade) an
 │  └─ src/config.ts (hot-reload getters)      │
 └─────────────────────────────────────────────┘
                     │
-┌─ Discord Layer (jade) ─────────────────────┐
-│  Eris Client                                │
-│  ├── messageCreate → trigger → behavior     │
-│  ├── messageReactionAdd → reactions          │
-│  ├── Dynamic status rotation                 │
-│  └── Spontaneous messages                    │
+┌─ Bot Layer ────────────────────────────────┐
+│  Jade (Discord) ──┐                        │
+│  Pixieglow (Matrix)┘                       │
+│  └── OpenAI-compatible HTTP                 │
 └──────────────────┬──────────────────────────┘
-                   │ HTTP (OpenAI-compatible)
+                   │
+┌─ Gateway Layer (sapphire) ─────────────────┐
+│  Classifies: FUTILE vs INTERESSANT          │
+│  (embedding centroid, 99.6% accuracy)       │
+│  Routes to appropriate Krystal instance     │
+└──────────────────┬──────────────────────────┘
+                   │
 ┌─ LLM Layer (krystal) ──────────────────────┐
-│  llama-server                               │
-│  └── GGUF model inference                   │
+│  Krystal-small (port 3124)                  │
+│  └── Luna-Protocol-1.5B (fast, GENERIC)     │
+│  Krystal-large (port 3125)                  │
+│  └── Discord-Hermes-8B (deep, SEMANTIC)     │
 └─────────────────────────────────────────────┘
 ```
 
