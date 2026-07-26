@@ -1,64 +1,75 @@
-# Protocol Luna
+# Luna Protocol
 
-Autonomous, sentient-like bots powered by local LLM inference. Discord (jade) and Matrix (pixieglow).
-
-## Projects
-
-| Project | Description | Stack |
-|---------|-------------|-------|
-| [sapphire](https://github.com/protocol-luna/sapphire) | LLM gateway (classification + routing) | Python, fastembed, FastAPI |
-| [krystal](https://github.com/protocol-luna/krystal) | LLM inference server (small/large mode) | llama.cpp (C++), PM2 |
-| [jade](https://github.com/protocol-luna/jade) | Discord bot client | TypeScript, Eris, esbuild |
-| [pixieglow](https://github.com/protocol-luna/pixieglow) | Matrix bot | TypeScript, Bun |
+An open-source multi-platform AI assistant ecosystem with a modular architecture. The brain service (**Emerald**) connects to platform adapters (Discord, Matrix) and an LLM gateway (**Sapphire**) backed by llama.cpp (**Krystal**).
 
 ## Architecture
 
-```
-┌─ User config ──────────────────────────────┐
-│  config.yml (YAML)                          │
-│  └─ src/config.ts (hot-reload getters)      │
-└─────────────────────────────────────────────┘
-                    │
-┌─ Bot Layer ────────────────────────────────┐
-│  Jade (Discord) ──┐                        │
-│  Pixieglow (Matrix)┘                       │
-│  └── OpenAI-compatible HTTP                 │
-└──────────────────┬──────────────────────────┘
-                   │
-┌─ Gateway Layer (sapphire) ─────────────────┐
-│  Classifies: FUTILE vs INTERESSANT          │
-│  (embedding centroid, 99.6% accuracy)       │
-│  Routes to appropriate Krystal instance     │
-└──────────────────┬──────────────────────────┘
-                   │
-┌─ LLM Layer (krystal) ──────────────────────┐
-│  Krystal-small (port 3124)                  │
-│  └── Luna-Protocol-1.5B (fast, GENERIC)     │
-│  Krystal-large (port 3125)                  │
-│  └── Discord-Hermes-8B (deep, SEMANTIC)     │
-└─────────────────────────────────────────────┘
+```mermaid
+graph TD
+    Discord["Discord"] --> Jade["Jade<br/>(Discord adapter)"]
+    Matrix["Matrix"] --> Pixieglow["Pixieglow<br/>(Matrix adapter)"]
+    Jade -- "WebSocket :3126" --> Emerald["Emerald<br/>(Brain)"]
+    Pixieglow -- "WebSocket :3126" --> Emerald
+    Emerald -- "HTTP :3123" --> Sapphire["Sapphire<br/>(LLM gateway)"]
+    Sapphire -- "HTTP :3124" --> Krystal["Krystal<br/>(llama.cpp)"]
 ```
 
-## Behaviors
+### Components
 
-- Variable concentration (per-trigger delays)
-- Keyboard typos (AZERTY / QWERTY) with correction
-- Message bursts (2-3 fragments at human pace)
-- Topic fatigue detection
-- Hesitation words, forgetfulness
-- Inactivity warmup
-- Sleep schedules (time-based)
-- Voice messages via Piper TTS
-- Spontaneous unprompted messages
-- Dynamic Discord presence rotation
+| Service | Role | Port | Language |
+|---------|------|------|----------|
+| **Emerald** | Brain & behavior engine | 3126 | TypeScript |
+| **Sapphire** | LLM gateway (sessions, classification, prompting) | 3123 | Python |
+| **Krystal** | LLM inference (llama.cpp) | 3124 | C++ |
+| **Jade** | Discord adapter | — | TypeScript |
+| **Pixieglow** | Matrix adapter | — | TypeScript |
 
-## Documentation
+### Data Flow
 
-Detailed diagrams, state machines, and explanations are available in the [`state-machines/`](state-machines/) folder — 24 Mermaid diagrams covering the entire codebase.
+1. User sends a message on Discord or Matrix
+2. The adapter (Jade/Pixieglow) forwards it to Emerald via WebSocket
+3. Emerald evaluates behavior rules (burst, typo, sleep, mannerisms)
+4. Emerald calls Sapphire's HTTP API with the message and behavior context
+5. Sapphire classifies the message (emotion valence/arousal, category), manages conversation sessions, injects few-shot examples, and constructs the prompt
+6. Sapphire calls Krystal with emotion-aware sampling parameters (temperature by arousal, repeat penalty by valence)
+7. Sapphire checks for degenerate responses and retries if needed
+8. Sapphire returns the response text (and optionally debug stats)
+9. Emerald applies typo/swap behavior and sends a `RespondCommand` back to the adapter
+10. The adapter posts the response to the platform
 
-## Models
+### Debug Mode
 
-Fine-tuned LLM models for Discord conversation:
+Any adapter can pass `debug: true` on message events. This flows through the entire stack:
 
-- [Luna-Protocol-1.5B (Qwen2.5)](https://huggingface.co/fox3000foxy/Luna-Protocol-1.5B-Discord-Dialogues-50k-instruct) — Recommended
-- [Dataset: Discord-Dialogues](https://huggingface.co/datasets/mookiezi/Discord-Dialogues) — 7.3M exchanges
+- Emerald passes `"debug": true` to Sapphire
+- Sapphire returns token counts, timing, emotion state, and classification confidence
+- Emerald maps snake_case → camelCase and includes `DebugStats` in the respond command
+- The adapter appends `-# ` formatted stat lines to the Discord/Matrix response
+
+## Features
+
+- **Multi-platform** — Discord (Jade) and Matrix (Pixieglow) with the same brain backend
+- **Behavior system** — Configurable burst, sleep schedule, typo/swap, mannerisms
+- **Emotion-aware LLM** — Valence/arousal classification adjusts sampling parameters
+- **Few-shot learning** — Category-matched example injection from YAML files
+- **Session management** — Per-channel conversation history
+- **Debug mode** — End-to-end token counting and timing across all layers
+- **Single small model** — Luna Protocol 1.5B Q4_K_M fits in ~3 GB RAM
+
+## Deployment
+
+- All services run on a single VPS managed by PM2
+- WebSocket :3126 (Emerald ↔ bots)
+- HTTP :3123 (Emerald ↔ Sapphire)
+- HTTP :3124 (Sapphire ↔ Krystal)
+- Cloudflared tunnel `matrix` handles `matrix.fox3000foxy.com → palpo (8008)` and `luna.fox3000foxy.com → tuwunel (8009)`
+- GitHub Pages serves `protocol-luna.github.io` from `.github/workflows/static.yml`
+
+## Repositories
+
+- [emerald](https://github.com/Luna-Protocol/emerald) — Brain service
+- [sapphire](https://github.com/Luna-Protocol/sapphire) — LLM gateway
+- [krystal](https://github.com/Luna-Protocol/krystal) — LLM inference
+- [jade](https://github.com/Luna-Protocol/jade) — Discord adapter
+- [pixieglow](https://github.com/Luna-Protocol/pixieglow) — Matrix adapter
+- [protocol-luna.github.io](https://github.com/Luna-Protocol/protocol-luna.github.io) — Website
