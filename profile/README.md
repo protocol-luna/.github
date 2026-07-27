@@ -26,14 +26,23 @@ An open-source multi-platform AI assistant ecosystem with a modular architecture
 ## Architecture
 
 ```mermaid
-graph TD
-    Discord["Discord"] --> Jade["Jade<br/>(Discord adapter)"]
-    Matrix["Matrix"] --> Pixieglow["Pixieglow<br/>(Matrix adapter)"]
-    Jade -- "WebSocket :3126" --> Emerald["Emerald<br/>(Brain)"]
-    Pixieglow -- "WebSocket :3126" --> Emerald
-    Emerald -- "HTTP :3123" --> Sapphire["Sapphire<br/>(LLM gateway)"]
-    Sapphire -- "HTTP :3124" --> Krystal["Krystal<br/>(llama.cpp)"]
-    Emerald -- "HTTP :3127" --> Ruby["Ruby<br/>(Markov chain)"]
+flowchart TD
+    Discord["Discord"]
+    Matrix["Matrix"]
+    Jade["Jade (Discord)"]
+    Pixieglow["Pixieglow (Matrix)"]
+    Emerald["Emerald (Brain)"]
+    Sapphire["Sapphire (LLM gateway)"]
+    Krystal["Krystal (llama.cpp)"]
+    Ruby["Ruby (Markov chain)"]
+
+    Discord --> Jade
+    Matrix --> Pixieglow
+    Jade -- ":3126 WS" --> Emerald
+    Pixieglow -- ":3126 WS" --> Emerald
+    Emerald -- ":3123" --> Sapphire
+    Sapphire -- ":3124" --> Krystal
+    Emerald -- ":3127" --> Ruby
 ```
 
 ### Services
