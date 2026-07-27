@@ -104,8 +104,8 @@ flowchart TD
 1. User sends a message on Discord or Matrix
 2. The adapter (Jade/Pixieglow) forwards it to Emerald via WebSocket
 3. Emerald evaluates behavior rules (burst, typo, sleep, mannerisms)
-4. Emerald calls Sapphire's HTTP API with the message and behavior context
-5. Sapphire classifies the message (emotion valence/arousal, category), manages conversation sessions, injects few-shot examples, and constructs the prompt
+4. Emerald decides: random/spontaneous triggers → Ruby (Markov chain), all others → Sapphire
+5. If Sapphire: classifies the message (emotion valence/arousal, category), manages conversation sessions, injects few-shot examples, and constructs the prompt
 6. Sapphire calls Krystal with emotion-aware sampling parameters
 7. Sapphire checks for degenerate responses and retries if needed
 8. Sapphire returns the response text (and optionally debug stats)
@@ -154,6 +154,7 @@ The bot doesn't just generate text — it decides *when*, *how*, and *whether* t
 - WebSocket :3126 (Emerald ↔ bots)
 - HTTP :3123 (Emerald ↔ Sapphire)
 - HTTP :3124 (Sapphire ↔ Krystal)
+- HTTP :3127 (Emerald ↔ Ruby)
 - Cloudflared tunnel for Matrix federation
 - GitHub Pages serves `protocol-luna.github.io`
 
@@ -169,7 +170,10 @@ git clone https://github.com/protocol-luna/sapphire.git && cd sapphire && pip in
 # 3. Brain service
 git clone https://github.com/protocol-luna/emerald.git && cd emerald && npm install && npm start
 
-# 4. Platform adapter (Discord or Matrix)
+# 4. Markov chain (optional)
+git clone https://github.com/protocol-luna/ruby.git && cd ruby && npm install && npm start
+
+# 5. Platform adapter (Discord or Matrix)
 git clone https://github.com/protocol-luna/jade.git  # or pixieglow
 ```
 
