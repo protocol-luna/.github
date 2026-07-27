@@ -131,13 +131,13 @@ The bot doesn't just generate text — it decides *when*, *how*, and *whether* t
 
 | Repository | Description | Language | Status |
 |------------|-------------|----------|--------|
-| [emerald](https://github.com/Luna-Protocol/emerald) | Brain & behavior engine | TypeScript | Active |
-| [sapphire](https://github.com/Luna-Protocol/sapphire) | LLM gateway | Python | Active |
-| [krystal](https://github.com/Luna-Protocol/krystal) | LLM inference | C++ | Active |
-| [jade](https://github.com/Luna-Protocol/jade) | Discord adapter | TypeScript | Active |
-| [pixieglow](https://github.com/Luna-Protocol/pixieglow) | Matrix adapter | TypeScript | Active |
-| [ruby](https://github.com/Luna-Protocol/ruby) | Markov chain | TypeScript | Active |
-| [protocol-luna.github.io](https://github.com/Luna-Protocol/protocol-luna.github.io) | Website | HTML/CSS | Active |
+| [emerald](https://github.com/protocol-luna/emerald) | Brain & behavior engine | TypeScript | Active |
+| [sapphire](https://github.com/protocol-luna/sapphire) | LLM gateway | Python | Active |
+| [krystal](https://github.com/protocol-luna/krystal) | LLM inference | C++ | Active |
+| [jade](https://github.com/protocol-luna/jade) | Discord adapter | TypeScript | Active |
+| [pixieglow](https://github.com/protocol-luna/pixieglow) | Matrix adapter | TypeScript | Active |
+| [ruby](https://github.com/protocol-luna/ruby) | Markov chain | TypeScript | Active |
+| [protocol-luna.github.io](https://github.com/protocol-luna/protocol-luna.github.io) | Website | HTML/CSS | Active |
 
 ## Deployment
 
