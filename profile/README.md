@@ -23,6 +23,10 @@
 
 An open-source multi-platform AI assistant ecosystem with a modular architecture. The brain service (**Emerald**) connects to platform adapters (Discord, Matrix) and an LLM gateway (**Sapphire**) backed by llama.cpp (**Krystal**).
 
+## What is LUNA?
+
+**LUNA** stands for **Lifelike User-like Neural Agent** — an autonomous conversational AI designed to mimic human imperfections and social behavior.
+
 ## Architecture
 
 ```mermaid
@@ -182,3 +186,4 @@ git clone https://github.com/protocol-luna/jade.git  # or pixieglow
 <p align="center">
   <sub>Built with ❤️ and <a href="https://llama.cpp/">llama.cpp</a></sub>
 </p>
+
