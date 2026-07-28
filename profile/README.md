@@ -32,15 +32,19 @@ An open-source multi-platform AI assistant ecosystem with a modular architecture
 ```mermaid
 flowchart TD
     classDef platform fill:#2c3e50,color:#fff,stroke-width:2px
+    classDef jade fill:#1abc9c,color:#fff,stroke-width:2px
+    classDef pixie fill:#e84393,color:#fff,stroke-width:2px
     classDef brain fill:#27ae60,color:#fff,stroke-width:2px
     classDef service fill:#2980b9,color:#fff,stroke-width:2px
     classDef inference fill:#8e44ad,color:#fff,stroke-width:2px
     classDef alt fill:#c0392b,color:#fff,stroke-width:2px
 
-    Discord["Discord / Matrix"]:::platform
+    Discord["Discord"]:::platform
+    Matrix["Matrix"]:::platform
 
-    Jade["Jade (Discord)"]:::platform
-    Pixieglow["Pixieglow (Matrix)"]:::platform
+    Jade["Jade (Discord)"]:::jade
+    Pixieglow["Pixieglow (Matrix)"]:::pixie
+    Discord ~~~ Matrix
 
     Emerald["Emerald (Brain)
     behavior · triggers · routing"]:::brain
