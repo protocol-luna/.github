@@ -31,22 +31,36 @@ An open-source multi-platform AI assistant ecosystem with a modular architecture
 
 ```mermaid
 flowchart TD
-    Discord["Discord"]
-    Matrix["Matrix"]
-    Jade["Jade (Discord)"]
-    Pixieglow["Pixieglow (Matrix)"]
-    Emerald["Emerald (Brain)"]
-    Sapphire["Sapphire (LLM gateway)"]
-    Krystal["Krystal (llama.cpp)"]
-    Ruby["Ruby (Markov chain)"]
+    classDef platform fill:#2c3e50,color:#fff,stroke-width:2px
+    classDef brain fill:#27ae60,color:#fff,stroke-width:2px
+    classDef service fill:#2980b9,color:#fff,stroke-width:2px
+    classDef inference fill:#8e44ad,color:#fff,stroke-width:2px
+    classDef alt fill:#c0392b,color:#fff,stroke-width:2px
+
+    Discord["Discord / Matrix"]:::platform
+
+    Jade["Jade (Discord)"]:::platform
+    Pixieglow["Pixieglow (Matrix)"]:::platform
+
+    Emerald["Emerald (Brain)
+    behavior · triggers · routing"]:::brain
+
+    Sapphire["Sapphire (LLM Gateway)
+    classify · emotion · sessions"]:::service
+
+    Krystal["Krystal (llama.cpp)
+    Luna 1.5B · Hermes-8B"]:::inference
+
+    Ruby["Ruby (Markov Chain)
+    order-4 · SQLite · 0 latency"]:::alt
 
     Discord --> Jade
     Matrix --> Pixieglow
     Jade -- ":3126 WS" --> Emerald
     Pixieglow -- ":3126 WS" --> Emerald
-    Emerald -- ":3123" --> Sapphire
+    Emerald -- ":3123 HTTP" --> Sapphire
     Sapphire -- ":3124" --> Krystal
-    Emerald -- ":3127" --> Ruby
+    Emerald -.->|":3127"| Ruby
 ```
 
 ### Services
