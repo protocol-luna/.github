@@ -67,7 +67,7 @@ flowchart TD
     Emerald -.->|":3127"| Ruby
 ```
 
-> 📐 [Detailed architecture & state machine diagrams](state-machines/)
+> 📐 [Detailed architecture & state machine diagrams](https://github.com/protocol-luna/.github/blob/main/state-machines/README.md)
 
 ### Services
 
