@@ -67,6 +67,8 @@ flowchart TD
     Emerald -.->|":3127"| Ruby
 ```
 
+> 📐 [Detailed architecture & state machine diagrams](state-machines/)
+
 ### Services
 
 <table>
