@@ -33,39 +33,47 @@ Bot: [generates response in the same casual style]
 
 ### Why Few-Shot is More Efficient with Luna-Protocol
 
-The Luna-Protocol model is a fine-tuned Qwen2.5 1.5B trained on only **50k samples** from the Discord-Dialogues dataset (a small subset of the full 7.3M exchanges). This limited training data means:
+The Luna-Protocol model is a fine-tuned Qwen2.5 1.5B trained on only **200k samples** from the Discord-Dialogues dataset. This limited training data means:
 
 - **Greater flexibility**: The model hasn't overfit to specific conversation patterns, making it more responsive to in-context examples
 - **Faster adaptation**: Few-shot priming can redirect the model's behavior more effectively than with models trained on massive datasets
-- **Improved consistency**: Examples provide clear signals that the model can quickly align with, unlike the base Qwen2.5 1.5B which may ignore or poorly follow examples
+- **Improved consistency**: Examples provide clear signals that the model can quickly align with
 
 ### When to Use
 
-- ✅ **Small to medium models** (< 7B parameters) - huge impact
-- ✅ **Discord bots** - patterns vary widely, examples help a lot
-- ✅ **Personality-driven characters** - consistency is key
-- ✅ **Specialized conversation styles** - technical, casual, formal, etc.
-- ⚠️ **Large models** (70B+) - less necessary but still helps
-- ⚠️ **Simple tasks** - might add unnecessary tokens
+- ✅ **Small to medium models** (< 7B parameters) -- huge impact
+- ✅ **Discord bots** -- patterns vary widely, examples help a lot
+- ✅ **Personality-driven characters** -- consistency is key
+- ✅ **Specialized conversation styles** -- technical, casual, formal, etc.
+- ⚠️ **Large models** (70B+) -- less necessary but still helps
+- ⚠️ **Simple tasks** -- might add unnecessary tokens
 
 ## Configuration
 
-### Basic Setup
+### Basic Setup (Sapphire server-side)
 
-In `config.yml`:
+Few-shot is handled server-side by Sapphire (Python), not in the bot config. Edit Sapphire's `few_shot_examples.yml` file:
 
 ```yaml
+# few_shot_examples.yml
+- user: "hello"
+  assistant: "hey, what's up?"
+- user: "how are you"
+  assistant: "doing good tbh, just chilling"
+```
+
+Or set the path via Sapphire's config:
+
+```yaml
+# Sapphire config.yml
 few_shot_enabled: true
-few_shot_examples:
-  - user: "hello"
-    assistant: "hey, what's up?"
-  - user: "how are you"
-    assistant: "doing good tbh, just chilling"
+few_shot_examples_path: ./few_shot_examples.yml
 ```
 
 ### Disabling
 
 ```yaml
+# Sapphire config.yml
 few_shot_enabled: false
 ```
 
@@ -167,84 +175,69 @@ Examples should sound natural, like real conversations:
 
 ### How It Works in Luna Protocol
 
-1. When `few_shot_enabled: true`:
-   - Examples are loaded from config
-   - `formatFewShotExamples()` converts them to message objects
-   - `injectFewShotIntoConversation()` inserts them after the system prompt
-   - Model receives: `[system_prompt] + [examples] + [current_conversation]`
+1. On startup, Sapphire loads `few_shot_examples.yml` via `load_few_shot_examples()`
+2. On each `/v1/respond` request, `format_few_shot_examples()` converts them to message objects
+3. `inject_few_shot_into_conversation()` inserts them after the system prompt, before conversation history
+4. Model receives: `[system_prompt] + [examples] + [conversation_history]`
 
-2. Token Usage:
-   - Each example adds ~10-30 tokens to your context window
-   - With prompt caching, examples are cached after first request
-   - Minimal impact on subsequent messages in the same session
+Bots are thin SSE clients -- they send `{ username, text, session_id }` to Sapphire and receive streamed tokens. No few-shot logic runs in the bot.
+
+### Token Usage
+
+- Each example adds ~10-30 tokens to your context window
+- With prompt caching (llama-server `--cache-reuse`), examples are cached after first request
+- Minimal impact on subsequent messages in the same session
 
 ### Code Integration
 
-**In `/src/core/llm-client.ts`**:
-```typescript
-if (FEW_SHOT_ENABLED && FEW_SHOT_EXAMPLES.length > 0) {
-  const fewShotMessages = formatFewShotExamples(FEW_SHOT_EXAMPLES);
-  finalMessages = injectFewShotIntoConversation(messages, fewShotMessages);
-}
-```
+In Sapphire's `src/sapphire/few_shot.py`:
 
-### Config Loading
-
-**In `/src/config.ts`**:
-```typescript
-export const FEW_SHOT_ENABLED: boolean =
-  v<boolean | null>("few_shot_enabled", null) ?? true;
-
-export const FEW_SHOT_EXAMPLES: FewShotExample[] =
-  v<FewShotExample[] | null>("few_shot_examples", null) ?? [
-    { user: "yo whats good", assistant: "nm just chillin, u" },
-    // ... defaults
-  ];
+```python
+def inject_few_shot_into_conversation(
+    messages: list[dict],
+    few_shot_messages: list[dict],
+) -> list[dict]:
+    if not messages:
+        return list(few_shot_messages)
+    system, *rest = messages
+    return [system, *few_shot_messages, *rest]
 ```
 
 ## Example Configurations
 
-### Luna-Protocol Discord Bot
-
-The default config includes Discord-optimized examples:
+### Luna-Protocol Bot (Sapphire `few_shot_examples.yml`)
 
 ```yaml
-few_shot_enabled: true
-few_shot_examples:
-  - user: "yo whats good"
-    assistant: "nm just chillin, u"
-  - user: "bored af"
-    assistant: "lol same energy fr"
-  - user: "hey how are you"
-    assistant: "im doing pretty good tbh, just vibing"
-  - user: "whats up"
-    assistant: "yooo not much, what about you"
-  - user: "how was your day"
-    assistant: "it was alright, nothing crazy happened lol"
+- user: "yo whats good"
+  assistant: "nm just chillin, u"
+- user: "bored af"
+  assistant: "lol same energy fr"
+- user: "hey how are you"
+  assistant: "im doing pretty good tbh, just vibing"
+- user: "whats up"
+  assistant: "yooo not much, what about you"
+- user: "how was your day"
+  assistant: "it was alright, nothing crazy happened lol"
 ```
 
 ### Help-Focused Bot
 
 ```yaml
-few_shot_enabled: true
-few_shot_examples:
-  - user: "how do i do this"
-    assistant: "hmm usually you can just... try restarting first?"
-  - user: "thanks that worked"
-    assistant: "nice! glad i could help"
-  - user: "one more question"
-    assistant: "sure go ahead, what's up"
+- user: "how do i do this"
+  assistant: "hmm usually you can just... try restarting first?"
+- user: "thanks that worked"
+  assistant: "nice! glad i could help"
+- user: "one more question"
+  assistant: "sure go ahead, what's up"
 ```
 
 ### Formal Assistant
 
 ```yaml
-few_shot_enabled: true
-few_shot_examples:
-  - user: "Hello, can you assist?"
-    assistant: "Of course, I'd be happy to help. What do you need?"
-  - user: "Thank you for your time"
-    assistant: "You're very welcome. Please don't hesitate to reach out again."
+- user: "Hello, can you assist?"
+  assistant: "Of course, I'd be happy to help. What do you need?"
+- user: "Thank you for your time"
+  assistant: "You're very welcome. Please don't hesitate to reach out again."
 ```
 
 ## Troubleshooting
@@ -252,9 +245,10 @@ few_shot_examples:
 ### Issue: Bot ignores few-shot examples
 
 **Check**:
-- `few_shot_enabled: true` in config.yml
-- Examples are properly formatted with `user` and `assistant` keys
-- No typos in config keys
+- `few_shot_enabled: true` in Sapphire's config
+- Examples are properly formatted with `user` and `assistant` keys in `few_shot_examples.yml`
+- Restarted Sapphire after editing examples
+- Check Sapphire startup logs for `"N few-shot examples (enabled=True)"`
 
 ### Issue: Bot sounds robotic or inconsistent
 
@@ -271,23 +265,12 @@ few_shot_examples:
 - Examples are cached after first message, minimal impact after
 - Use shorter examples
 
-### Issue: Hot-reload not picking up changes
+### Issue: Changes not taking effect
 
 **Solution**:
-- Modify `config.yml` and save
-- Bot automatically detects and reloads
-- If not working, check console for errors
-- Restart bot if needed
-
-## Advanced: Custom Few-Shot Loading
-
-If you need dynamic few-shot examples, you can modify `/src/core/llm-client.ts`:
-
-```typescript
-// Load examples from database or API
-const customExamples = await loadExamplesFromDB();
-const fewShotMessages = formatFewShotExamples(customExamples);
-```
+- Few-shot examples are loaded at Sapphire startup -- restart Sapphire after editing `few_shot_examples.yml`
+- Set `few_shot_enabled: false` in config to disable temporarily
+- Check Sapphire logs for load errors on startup
 
 ## Performance Impact
 
@@ -299,15 +282,16 @@ const fewShotMessages = formatFewShotExamples(customExamples);
 
 ### Model Performance
 
-- Small models (1.5B): ⭐⭐⭐⭐⭐ Significant improvement
-  - **Luna-Protocol-1.5B**: Particularly effective due to limited training data (50k samples), making few-shot priming more efficient than base Qwen2.5 1.5B
-- Medium models (7B): ⭐⭐⭐⭐ Good improvement
-- Large models (13B+): ⭐⭐⭐ Modest improvement
-- Very large models (70B+): ⭐⭐ Minimal improvement (but still helps)
+| Model Size | Impact |
+|---|---|
+| Small (1.5B) | ⭐⭐⭐⭐⭐ Significant improvement |
+| Medium (7B) | ⭐⭐⭐⭐ Good improvement |
+| Large (13B+) | ⭐⭐⭐ Modest improvement |
+| Very Large (70B+) | ⭐⭐ Minimal improvement |
 
 ## Related Resources
 
 - [OpenAI Few-Shot Learning](https://platform.openai.com/docs/guides/prompt-engineering/few-shot-learning)
-- [Luna Protocol - Few-Shot Module](../src/core/few-shot.ts)
-- [Example Configurations](../few-shot-examples.example.yml)
-- [Main Config](../config.example.yml)
+- [Luna Protocol -- Sapphire Few-Shot Module](../sapphire/src/sapphire/few_shot.py)
+- [Sapphire Config](../sapphire/config.example.yml)
+- [Example Few-Shot File](../sapphire/few_shot_examples.yml)
