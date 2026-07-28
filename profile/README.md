@@ -57,7 +57,7 @@ flowchart TD
     FUTILE messages"]:::inference
 
     KrystalL["Krystal (Large)
-    Hermes-8B · :3125
+    Discord-Hermes-8B · :3125
     INTERESSANT messages"]:::inference
 
     Ruby["Ruby (Markov Chain)

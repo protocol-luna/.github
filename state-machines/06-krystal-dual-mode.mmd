@@ -2,7 +2,7 @@ flowchart TD
     START(["start.sh <mode>"]) --> MODE{argument}
 
     MODE -->|"small"| SMALL_CFG["Defaults:<br/>model = Luna 1.5B Q4_K_M (941 MB)<br/>port = 3124<br/>CPU = 0<br/>RAM ≈ 3.5 GB"]
-    MODE -->|"large"| LARGE_CFG["Defaults:<br/>model = Hermes-8B Q2_K (3.3 GB)<br/>port = 3125<br/>CPU = 0,1<br/>RAM ≈ 6 GB"]
+    MODE -->|"large"| LARGE_CFG["Defaults:<br/>model = Discord-Hermes-8B Q2_K (3.3 GB)<br/>port = 3125<br/>CPU = 0,1<br/>RAM ≈ 6 GB"]
 
     SMALL_CFG --> ENV_VARS["Read env overrides<br/>KRYSTAL_MODEL_PATH<br/>KRYSTAL_PORT<br/>KRYSTAL_CPU_AFFINITY<br/>KRYSTAL_N_THREADS<br/>KRYSTAL_N_CTX<br/>KRYSTAL_N_SLOTS<br/>(also legacy LLM_* namespace)"]
     LARGE_CFG --> ENV_VARS
