@@ -52,8 +52,13 @@ flowchart TD
     Sapphire["Sapphire (LLM Gateway)
     classify · emotion · sessions"]:::service
 
-    Krystal["Krystal (llama.cpp)
-    Luna 1.5B · Hermes-8B"]:::inference
+    KrystalS["Krystal (Small)
+    Luna 1.5B · :3124
+    FUTILE messages"]:::inference
+
+    KrystalL["Krystal (Large)
+    Hermes-8B · :3125
+    INTERESSANT messages"]:::inference
 
     Ruby["Ruby (Markov Chain)
     order-4 · SQLite · 0 latency"]:::alt
@@ -63,7 +68,8 @@ flowchart TD
     Jade -- ":3126 WS" --> Emerald
     Pixieglow -- ":3126 WS" --> Emerald
     Emerald -- ":3123 HTTP" --> Sapphire
-    Sapphire -- ":3124" --> Krystal
+    Sapphire -- ":3124" --> KrystalS
+    Sapphire -- ":3125" --> KrystalL
     Emerald -.->|":3127"| Ruby
 ```
 
