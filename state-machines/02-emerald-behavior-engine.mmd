@@ -38,21 +38,20 @@ flowchart TD
 
     BURST_PLAN --> REPLY_STYLE
     REPLY_STYLE --> PICK["pickReplyStyle()<br/>active: weighted (50/15/30/5)<br/>cold: 70% quote, 20% quote+ping, 10% none"]
-    PICK --> TYPO
+    PICK --> CHECK_TYPO
+    CHECK_TYPO["applyTypo(6%) ?"]
+    CHECK_TYPO -->|"yes"| TYPO_DONE["replace letter with keyboard neighbor"]
+    CHECK_TYPO -->|"no"| CHECK_SWAP
 
-    TYPO {"applyTypo(6%) ?"}
-    TYPO -->|"yes"| TYPO_DONE["replace letter with<br/>keyboard neighbor"]
-    TYPO -->|"no"| SWAP
+    TYPO_DONE --> CHECK_SWAP
+    CHECK_SWAP["applyLetterSwap(4%) ?"]
+    CHECK_SWAP -->|"yes"| SWAP_DONE["swap adjacent letters"]
+    CHECK_SWAP -->|"no"| CHECK_VOICE
 
-    TYPO_DONE --> SWAP
-    SWAP {"applyLetterSwap(4%) ?"}
-    SWAP -->|"yes"| SWAP_DONE["swap adjacent letters"]
-    SWAP -->|"no"| VOICE
-
-    SWAP_DONE --> VOICE
-    VOICE {"voiceMessageChance(12%) ?"}
-    VOICE -->|"yes"| VOICE_FLAG["set voice: true"]
-    VOICE -->|"no"| DONE
+    SWAP_DONE --> CHECK_VOICE
+    CHECK_VOICE["voiceMessageChance(12%) ?"]
+    CHECK_VOICE -->|"yes"| VOICE_FLAG["set voice: true"]
+    CHECK_VOICE -->|"no"| DONE
 
     VOICE_FLAG --> DONE
     DONE(["RespondCommand ready"])
