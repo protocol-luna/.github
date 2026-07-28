@@ -25,7 +25,7 @@ An open-source multi-platform AI assistant ecosystem with a modular architecture
 
 ## What is LUNA?
 
-**LUNA** stands for **Lifelike User-like Neural Agent** — an autonomous conversational AI designed to mimic human imperfections and social behavior.
+**LUNA** stands for **Lifelike User-like Neural Agent** -- an autonomous conversational AI designed to mimic human imperfections and social behavior.
 
 ## Architecture
 
@@ -83,14 +83,14 @@ flowchart TD
   <tr>
     <td><strong>Jade</strong></td>
     <td>Discord adapter</td>
-    <td>—</td>
+    <td>--</td>
     <td>TypeScript</td>
     <td><img src="images/jade.png" width="80" style="border-radius: 8px;"></td>
   </tr>
   <tr>
     <td><strong>Pixieglow</strong></td>
     <td>Matrix adapter</td>
-    <td>—</td>
+    <td>--</td>
     <td>TypeScript</td>
     <td><img src="images/pixieglow.png" width="80" style="border-radius: 8px;"></td>
   </tr>
@@ -118,27 +118,27 @@ flowchart TD
 
 ## Behavior System
 
-The bot doesn't just generate text — it decides *when*, *how*, and *whether* to respond, simulating human imperfections:
+The bot doesn't just generate text -- it decides *when*, *how*, and *whether* to respond, simulating human imperfections:
 
 | Behavior | Description |
 |----------|-------------|
-| **Sleep cycles** | Circadian rhythm — ignores messages during rest hours, slows down when drowsy |
+| **Sleep cycles** | Circadian rhythm -- ignores messages during rest hours, slows down when drowsy |
 | **Typo injection** | Keyboard-mistake realism with delayed self-correction |
 | **Hesitation** | Filler words injected post-generation ("uh...", "hmm...") |
 | **Burst mode** | Splits long responses into timed fragments |
-| **Topic fatigue** | Gets bored of repetitive topics — longer delays, higher ignore chance |
+| **Topic fatigue** | Gets bored of repetitive topics -- longer delays, higher ignore chance |
 | **Forget chance** | Silently drops messages 3% of the time |
 | **Follow-up detection** | Chains up to 3 rapid replies in active conversations |
 
 ## Features
 
-- **Multi-platform** — Discord (Jade) and Matrix (Pixieglow) with the same brain backend
-- **Emotion-aware LLM** — Valence/arousal classification adjusts sampling parameters
-- **Few-shot learning** — Category-matched example injection from YAML files
-- **Session management** — Per-channel conversation history
-- **Markov chain spontaneity** — Ruby generates context-free messages from real conversation data
-- **Debug mode** — End-to-end token counting and timing across all layers
-- **Single small model** — Luna Protocol 1.5B Q4_K_M fits in ~3 GB RAM
+- **Multi-platform** -- Discord (Jade) and Matrix (Pixieglow) with the same brain backend
+- **Emotion-aware LLM** -- Valence/arousal classification adjusts sampling parameters
+- **Few-shot learning** -- Category-matched example injection from YAML files
+- **Session management** -- Per-channel conversation history
+- **Markov chain spontaneity** -- Ruby generates context-free messages from real conversation data
+- **Debug mode** -- End-to-end token counting and timing across all layers
+- **Single small model** -- Luna Protocol 1.5B Q4_K_M fits in ~3 GB RAM
 
 ## Repositories
 

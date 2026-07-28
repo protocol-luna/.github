@@ -1,11 +1,11 @@
-# Luna Protocol — Detailed Overview
+# Luna Protocol -- Detailed Overview
 
-Fully autonomous and sentient-like Discord bot. Runs a local LLM (llama.cpp) and converses naturally — sleep, inattention, typos, hesitations, forgetfulness, topic fatigue, message bursts, voice messages, anti-spam queue, persistence, auto-restart, rotating status.
+Fully autonomous and sentient-like Discord bot. Runs a local LLM (llama.cpp) and converses naturally -- sleep, inattention, typos, hesitations, forgetfulness, topic fatigue, message bursts, voice messages, anti-spam queue, persistence, auto-restart, rotating status.
 
 > **Luna Protocol now has its own official models!**
 >
 > The project includes optimized models trained specifically for Discord conversations:
-> - **Luna-Protocol-1.5B-Fine-Tuned-Qwen2.5** (Recommended) — Lightweight, fast, perfect for Discord bots
+> - **Luna-Protocol-1.5B-Fine-Tuned-Qwen2.5** (Recommended) -- Lightweight, fast, perfect for Discord bots
 > - Available on [HuggingFace](https://huggingface.co/fox3000foxy/Luna-Protocol-1.5B-Discord-Dialogues-50k-instruct)
 >
 > These models come with **few-shot priming support** to guide conversation style and improve consistency.
@@ -20,7 +20,7 @@ Fully autonomous and sentient-like Discord bot. Runs a local LLM (llama.cpp) and
 
 ## Trigger System
 
-### State machine — incoming message decision
+### State machine -- incoming message decision
 
 ### Trigger priority order
 
@@ -30,7 +30,7 @@ Fully autonomous and sentient-like Discord bot. Runs a local LLM (llama.cpp) and
 | 2 | `dm` | DM with `replyInDM = true` | Yes (0%) | No |
 | 3 | `name` | "Luna"/"Pixie"/alias (whole word) | No (8%) | No |
 | 4 | `keyword` | `hello`, `hi`, `hey`, `yo`, `ai`, `bot`... (whole word) | No (8%) | No |
-| 5 | `follow-up` | Bot was last speaker + < 15s + < 3 / 60s | — | — |
+| 5 | `follow-up` | Bot was last speaker + < 15s + < 3 / 60s | -- | -- |
 | 6 | `random` | 1.5% chance on non-matching | No (8%) | No |
 
 Whole word matching (`\b`): "ai" does not match "mais", "vrai", "lait".
@@ -78,7 +78,7 @@ Configurable probability (`voice_message_chance`, default 8%). Full pipeline: sa
 
 ### Typing indicator
 
-`startTyping()` is called before `askLLM()` — the typing indicator stays active during generation (refreshed every 8s).
+`startTyping()` is called before `askLLM()` -- the typing indicator stays active during generation (refreshed every 8s).
 
 ### Real-time response
 
@@ -153,22 +153,22 @@ Single `config.yml` file. Shell env vars override YAML keys if present. Hot-relo
 
 | Icon | Meaning |
 |---|---|
-| ✅ | Hot-reloadable — changes picked up at runtime |
+| ✅ | Hot-reloadable -- changes picked up at runtime |
 | ❌ | Requires restart |
 
 ### Secrets & Paths (❌)
 
-- `discord_token` — Discord bot token
-- `llama_model_path` — Path to GGUF model
-- `llm_host` / `llm_port` — LLM server connection
-- `llm_mode` — `direct` (local llama-server) or `online` (OpenAI API)
-- `tts_model_path`, `tts_binary_path`, `ffmpeg_path`, `ffprobe_path` — TTS & audio paths
+- `discord_token` -- Discord bot token
+- `llama_model_path` -- Path to GGUF model
+- `llm_host` / `llm_port` -- LLM server connection
+- `llm_mode` -- `direct` (local llama-server) or `online` (OpenAI API)
+- `tts_model_path`, `tts_binary_path`, `ffmpeg_path`, `ffprobe_path` -- TTS & audio paths
 
 ### Triggers (✅)
 
 `names`, `keywords`, `random_chance`, `cooldown_seconds`, `reply_in_dm`
 
-### Mannerisms — Concentration (✅)
+### Mannerisms -- Concentration (✅)
 
 Per-trigger delays, ignore & reaction chances.
 
@@ -226,7 +226,7 @@ Weighted message_reference + mention_replied_user configs.
 
 ## Dataset
 
-[**Discord-Dialogues**](https://huggingface.co/datasets/mookiezi/Discord-Dialogues) — 7.3M exchanges, 17M turns, 140M words. Real Discord conversations spring-summer 2025, filtered PII/ToS/bots/commands. Apache 2.0.
+[**Discord-Dialogues**](https://huggingface.co/datasets/mookiezi/Discord-Dialogues) -- 7.3M exchanges, 17M turns, 140M words. Real Discord conversations spring-summer 2025, filtered PII/ToS/bots/commands. Apache 2.0.
 
 | Metric | Value |
 |---|---|
