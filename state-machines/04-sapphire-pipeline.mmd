@@ -1,0 +1,37 @@
+flowchart TD
+    START(["POST /v1/respond"]) --> EMBED["embed user text<br/>BGE-small-en-v1.5 → 384-dim vector"]
+
+    EMBED --> CLASSIFY["classify(emb)<br/>cos similarity to centroids<br/>diff > 0 → INTERESSANT<br/>diff ≤ 0 → FUTILE"]
+    EMBED --> SCORE_EMOTION["score emotion(emb)<br/>cos(pos) − cos(neg) → valence<br/>cos(high) − cos(low) → arousal"]
+
+    CLASSIFY --> LABEL{label ?}
+    LABEL -->|"FUTILE"| BACKEND["backend = KRYSTAL_GENERIC_URL (:3124)"]
+    LABEL -->|"INTERESSANT"| BACKEND2["backend = KRYSTAL_SEMANTIC_URL (:3125)"]
+
+    SCORE_EMOTION --> UPDATE_EMA["emotionState.update(sessionId, valence, arousal)<br/>ema = prev × 0.85 + delta × 0.15<br/>deadzone: 0.005"]
+    UPDATE_EMA --> EMOTION_STATE["current emotion: valence, arousal"]
+
+    BACKEND --> APPEND_SESSION
+    BACKEND2 --> APPEND_SESSION
+
+    APPEND_SESSION["sessionStore.appendUserMessage<br/>(username + text)"] --> FEW_SHOT{"fewShot enabled ?"}
+    FEW_SHOT -->|"yes"| INJECT["inject 5 few-shot examples<br/>after system prompt"]
+    FEW_SHOT -->|"no"| COMPUTE_SLOT
+    INJECT --> COMPUTE_SLOT
+
+    COMPUTE_SLOT["slot = hashCode(sessionId) % nSlots<br/>(Java-style 32-bit hash)"] --> SAMPLING_PARAMS
+
+    EMOTION_STATE --> SAMPLING_PARAMS
+    SAMPLING_PARAMS --> COMPUTE_PARAMS["temperature = 0.7 + arousal×0.3 [0.4,1.0]<br/>repeat_penalty = 1.15 − valence×0.1 [1.0,1.3]<br/>mirostat: mode=2, LR=0.1, ent=5.0+arousal×2"]
+
+    COMPUTE_PARAMS --> CALL_KRYSTAL["POST {backend}/v1/chat/completions<br/>messages + slot + params + max_tokens:2000"]
+
+    CALL_KRYSTAL --> DEGENERATE{"is_degenerate(text) ?"}
+    DEGENERATE -->|"no"| TRUNCATE
+    DEGENERATE -->|"yes, retries left"| RETRY["retry (up to 3×)"]
+    RETRY --> CALL_KRYSTAL
+    DEGENERATE -->|"yes, no retries"| USE_ANYWAY["use last response anyway"]
+
+    USE_ANYWAY --> TRUNCATE
+    TRUNCATE["truncateUserLeak()<br/>strip after '\nUser:'"] --> SAVE_SESSION["sessionStore.appendAssistantMessage<br/>+ cleanupStale()"]
+    SAVE_SESSION --> RESPOND["RespondResult{text, debug, label,<br/>valence, arousal, tokens, timing, ...}"]

@@ -1,0 +1,68 @@
+flowchart TD
+    subgraph JADE["Jade (Discord)"]
+        JDISCORD["Discord messageCreate"] --> JFILTER{"author = bot ?"}
+        JFILTER -->|"yes"| JSELF["send bot_message event<br/>→ for Ruby training"]
+        JFILTER -->|"no"| JDEBUG{"starts with -debug ?"}
+        JDEBUG -->|"yes"| JTOGGLE["toggle per-channel debug<br/>→ debug: true in MessageEvent"]
+        JDEBUG -->|"no"| JMSG["MessageEvent{id, channel, user,<br/>text, isDM, mentions, debug}"]
+
+        JMSG --> JWS["EmeraldClient.sendEvent()<br/>WS → :3126"]
+        JWS --> JCMD["← Receive OutCommand"]
+
+        JCMD --> JRESP{"type == 'respond' ?"}
+        JCMD --> JTYPING{"type == 'typing' ?"}
+        JCMD --> JPRESENCE{"type == 'set_presence' ?"}
+
+        JRESP -->|"yes"| JDELAY["wait cmd.delay ms"]
+        JDELAY --> JREACT["optional ReactionPlan"]
+        JREACT --> JTYPE["startTyping()<br/>8s interval"]
+        JTYPE --> JBURST["splitBurst()<br/>2-3 fragments?"]
+        JBURST --> JSEND0["send fragment 0<br/>+ hesitation word<br/>+ reply style<br/>+ debug lines"]
+        JSEND0 --> JFRAG["setTimeout for each<br/>remaining fragment"]
+        JFRAG --> JCORRECT["typoCorrection/letterSwap<br/>→ editMessage() after delay<br/>or post correction message"]
+        JCORRECT --> JVOICE{"cmd.voice ?"}
+        JVOICE -->|"yes"| JTTS["PiperTTS → WAV → ffmpeg OGG<br/>→ Discord CDN upload<br/>→ POST voice message"]
+        JVOICE -->|"no"| JDONE
+        JTTS --> JDONE
+
+        JTYPING -->|"yes"| JTYPE2["startTyping() +<br/>setTimeout(clear, duration)"]
+
+        JPRESENCE -->|"yes"| JSTATUS["client.editStatus()"]
+    end
+
+    subgraph PIXIE["Pixieglow (Matrix)"]
+        PMATRIX["Matrix sync loop"] --> PSYNC["client.sync(since, 30s)<br/>long-poll"]
+        PSYNC --> PTIMELINE["processTimeline(roomId, events)"]
+        PTIMELINE --> PFILTER{"m.room.message<br/>&& sender ≠ bot<br/>&& m.text/m.notice/m.emote ?"}
+        PFILTER -->|"yes"| PDEBUG{"starts with -debug ?"}
+        PDEBUG -->|"yes"| PSTRIP["strip -debug prefix<br/>→ debug: true"]
+        PDEBUG -->|"no"| PMSG["MessageEvent{id, channel, user,<br/>text, timestamp, isDM, debug}"]
+
+        PMSG --> PWS["EmeraldClient.sendEvent()<br/>WS → :3126"]
+        PWS --> PCMD["← Receive OutCommand"]
+
+        PCMD --> PRESP{"type == 'respond' ?"}
+        PCMD --> PTYPE{"type == 'typing' ?"}
+        PCMD --> PPRES{"type == 'set_presence' ?"}
+
+        PRESP -->|"yes"| PDELAY["wait cmd.delay ms"]
+        PDELAY --> PREACT["optional ReactionPlan"]
+        PREACT --> PTYPE_START["startTyping()<br/>12s interval"]
+        PTYPE_START --> PBURST["splitBurst()<br/>2-3 fragments?"]
+        PBURST --> PSEND["send fragment 0<br/>+ hesitation word<br/>+ reply style<br/>+ debug lines"]
+        PSEND --> PFRAG["setTimeout for each<br/>remaining fragment"]
+        PFRAG --> PCORRECT["typoCorrection/letterSwap<br/>→ editMessage()"]
+        PCORRECT --> PDONE
+
+        PTYPE -->|"yes"| PTYPE2["startTyping() +<br/>setTimeout(clear, duration)"]
+
+        PPRES -->|"yes"| PSTATUS["client.updatePresence()"]
+
+        PSYNC --> PINVITE{"invited rooms ?"}
+        PINVITE -->|"yes"| PJOIN["client.joinRoom()<br/>cache members"]
+    end
+
+    JWS --> EMERALD["Emerald :3126"]
+    PWS --> EMERALD
+    EMERALD --> JCMD
+    EMERALD --> PCMD

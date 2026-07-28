@@ -1,0 +1,42 @@
+stateDiagram-v2
+    [*] --> DECIDE_ROUTE: Behavior annotated, delay computed
+
+    DECIDE_ROUTE --> RUBY_GEN: trigger reason in ruby_reasons[] && ruby_enabled
+    DECIDE_ROUTE --> SAPPHIRE_STREAM: else (default)
+
+    RUBY_GEN --> RUBY_HTTP: RubyClient.generate(seed, maxLength, channelId)
+    RUBY_HTTP --> RUBY_RESPONSE: HTTP POST :3127/generate → {text}
+    RUBY_RESPONSE --> APPLY_TYPO: text received
+
+    SAPPHIRE_STREAM --> SAPPHIRE_HTTP: SapphireClient.askStream(text, sessionId, debug)
+    SAPPHIRE_HTTP --> FIRST_CHUNK: SSE data: token
+    FIRST_CHUNK --> TYPING_CMD: emit TypingCommand → bot (typing indicator)
+    FIRST_CHUNK --> STREAM_TOKENS: continue collecting tokens
+
+    STREAM_TOKENS --> STREAM_TOKENS: SSE token chunks arrive
+    STREAM_TOKENS --> FINAL_META: SSE data: {text, debug, label, ...}
+    FINAL_META --> APPLY_TYPO: SapphireResult complete
+
+    APPLY_TYPO --> APPLY_SWAP: typo applied if rolled earlier
+    APPLY_SWAP --> ASSEMBLE: letter swap applied if rolled earlier
+
+    ASSEMBLE --> BUILD_COMMAND: build RespondCommand
+    BUILD_COMMAND --> RESPOND_CMD: RespondCommand{
+      responseText,
+      delay,
+      replyTo,
+      replyStyle,
+      hesitationWord?,
+      burstPlan?,
+      typoCorrection?,
+      letterSwap?,
+      react?,
+      voice?,
+      debugStats?
+    }
+
+    RESPOND_CMD --> SEND_TO_BOT: server.ts → sendCommand(clientId, cmd)
+    SEND_TO_BOT --> [*]: Bot executes on platform
+
+    note right of RUBY_GEN: No LLM latency<br/>Instant generation
+    note right of SAPPHIRE_STREAM: First token → typing<br/>Then streaming response

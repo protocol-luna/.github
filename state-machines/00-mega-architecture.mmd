@@ -1,0 +1,276 @@
+flowchart TB
+  classDef jadeColor fill:#1abc9c,color:#fff,stroke:#16a085,stroke-width:3px
+  classDef pixieColor fill:#e84393,color:#fff,stroke:#d63384,stroke-width:3px
+  classDef emeraldColor fill:#27ae60,color:#fff,stroke:#1e8449,stroke-width:3px
+  classDef sapphireColor fill:#2980b9,color:#fff,stroke:#1f618d,stroke-width:3px
+  classDef rubyColor fill:#c0392b,color:#fff,stroke:#a93226,stroke-width:3px
+  classDef krystalColor fill:#8e44ad,color:#fff,stroke:#6c3483,stroke-width:3px
+  classDef platformColor fill:#2c3e50,color:#fff,stroke:#1a252f,stroke-width:3px
+  classDef innerNode fill:#ecf0f1,color:#2c3e50,stroke:#bdc3c7
+  classDef subNode fill:#ffffff,color:#2c3e50,stroke:#d5dbdb
+
+  %% ─── PLATFORM ───
+  subgraph platform["Platform Layer"]
+    discord["Discord"]:::platformColor
+    matrix["Matrix"]:::platformColor
+    discord ~~~ matrix
+  end
+  style platform fill:#1a252f,color:#fff
+
+  %% ─── JADE ───
+  subgraph jadeGroup["Jade (Discord Adapter)"]
+    jclient["Eris Client
+      guilds | guildMessages | DMs
+      messageContent | messageReactions"]:::innerNode
+    jhandlers["Event Handlers
+      ready → connect Emerald WS
+      messageCreate → filter + forward
+      messageReactionAdd → ❌▶️🗑️"]:::subNode
+    jws["EmeraldClient WS
+      → Ready / Message / BotMessage
+      ← Respond / Typing / Presence"]:::innerNode
+    jresp["Response Executor
+      1. wait cmd.delay
+      2. optional delayed reaction
+      3. start typing (8s interval)
+      4. split burst fragments
+      5. send text + debug lines
+      6. typo/swap correction edit
+      7. voice message if cmd.voice"]:::innerNode
+    jdebug["Debug Mode
+      -debug prefix → DebugStats appended"]:::subNode
+    jtts["TTS Pipeline
+      PiperTTS → WAV → ffmpeg OGG
+      → Discord CDN upload
+      → POST voice message (flags=8192)"]:::subNode
+  end
+  style jadeGroup fill:#1abc9c,color:#fff
+
+  %% ─── PIXIEGLOW ───
+  subgraph pixieGroup["Pixieglow (Matrix Adapter)"]
+    pmx["MatrixClient (CS API v3)
+      sync 30s long-poll
+      sendText / sendEmote / sendReaction
+      editMessage / setTyping / joinRoom"]:::innerNode
+    psycle["Sync Loop
+      initial 10s → incremental 30s
+      auto-join rooms
+      cache members & names"]:::subNode
+    pws["EmeraldClient WS
+      → Ready / Message
+      ← Respond / Typing / Presence"]:::innerNode
+    presp["Response Executor
+      1. wait cmd.delay
+      2. optional delayed reaction
+      3. start typing (12s interval)
+      4. split burst fragments
+      5. send text + debug lines
+      6. typo/swap correction edit"]:::innerNode
+    pdebug["Debug Mode
+      -debug prefix → DebugStats"]:::subNode
+  end
+  style pixieGroup fill:#e84393,color:#fff
+
+  %% ─── EMERALD ───
+  subgraph emeraldGroup["Emerald (Central Brain)"]
+    ews["WebSocket Server :3126
+      broadcastCommand()
+      per-client BotConnection
+      {event, payload/command} JSON"]:::innerNode
+    etrigger["Trigger Evaluation Chain
+      1. -stop/-start/-clear commands
+      2. self-message guard
+      3. mention → ALWAYS respond
+      4. DM → ALWAYS respond
+      5. global pause check
+      6. per-channel cooldown
+      7. name substring match
+      8. keyword + 10% probability
+      9. follow-up (bot last, 60s, ≤3)
+      10. random 1.5% chance
+      11. ignore (fallback)"]:::innerNode
+    ebehave["Behavior Engine
+      Sleep: schedules (null/short/slow/sleep)
+      Burst: 2-3 fragments @ 15%
+      Typo: neighbor key replace @ 6%
+      LetterSwap: adjacent swap @ 4%
+      Hesitate: prepend word @ 15%
+      Forget: 3% (not DMs/mentions)
+      React: random emoji + delay
+      Voice: flag @ 12%
+      Delay: reading + warmup + fatigue + jitter
+      Ignore: base% + sleep bonus + fatigue bonus
+      ReplyStyle: weighted 50/15/30/5"]:::innerNode
+    estate["State Management (in-memory)
+      BrainState:
+      ├── cooldowns (per-channel)
+      ├── activity timestamps
+      ├── session pause/queue
+      ├── lastSpeaker
+      ├── followUp budget (60s, 3 max)
+      ├── botActivity
+      └── global inactivity timer
+      TopicFatigue:
+      ├── word repetition logs
+      ├── freq ≥3 → delay mult up to 5x
+      └── auto-prune
+      Spontaneous: 5min interval, 12%"]:::innerNode
+    eclient["Service Clients
+      SapphireClient → HTTP :3123
+      ├── askStream() SSE (main path)
+      ├── ask() non-streaming
+      └── reset(sessionId)
+      RubyClient → HTTP :3127
+      ├── train() fire-and-forget
+      └── generate(seed, length, channel)"]:::innerNode
+    erouting["Generation Routing
+      Ruby_reasons includes trigger reason?
+      → YES: Ruby.generate() (no LLM)
+      → NO: Sapphire.askStream()
+      First token → TypingCommand
+      Final → apply typo/swap → RespondCommand"]:::innerNode
+  end
+  style emeraldGroup fill:#27ae60,color:#fff
+
+  %% ─── SAPPHIRE ───
+  subgraph sapphireGroup["Sapphire (LLM Gateway)"]
+    sapi["FastAPI Server :3123
+      /v1/respond → main pipeline
+      /v1/chat → OpenAI proxy
+      /classify / /v1/reset
+      /emotion/{key} / /health"]:::innerNode
+    sclass["Centroid Classification
+      BAAI/bge-small-en-v1.5 (384-dim)
+      578 futile + 545 interessant centroids
+      Cosine similarity diff → label"]:::innerNode
+    semotion["Emotion Scoring
+      4 pole centroids (pos/neg/high/low)
+      Valence/Arousal ∈ [-1,1]
+      EMA: decay=0.85, deadzone=0.005"]:::innerNode
+    ssession["Session Store
+      In-memory dict, TTL=10min
+      max_history: 20 exchanges
+      Java hashCode → slot mapping"]:::innerNode
+    spipeline["Request Pipeline
+      embed → classify → score emotion
+      → update EMA → pick backend
+      → append to session → inject few-shot
+      → compute slot → emotion sampling params
+      → call Krystal (retry ×3)
+      → degenerate check → truncate user leak
+      → save to session → respond"]:::innerNode
+    ssampling["Emotion-Aware Sampling
+      temperature = 0.7 + arousal×0.3 [0.4, 1.0]
+      repeat_penalty = 1.15 − valence×0.1 [1.0, 1.3]
+      mirostat: mode=2, LR=0.1, ent=5.0+arousal×2"]:::subNode
+    sdeg["Degenerate Detection
+      empty / single char / short+noPunct
+      retry up to 3×"]:::subNode
+  end
+  style sapphireGroup fill:#2980b9,color:#fff
+
+  %% ─── RUBY ───
+  subgraph rubyGroup["Ruby (Markov Chain)"]
+    rhttp["HTTP Server :3127
+      POST /train /train-batch /generate
+      GET /channels /stats /health"]:::innerNode
+    rtoken["Tokenizer
+      strip URLs/mentions/emoji
+      keep letters+accents+apostrophes
+      split whitespace → filter empty"]:::subNode
+    rchain["Order-4 Markov Chain
+      SQLite WAL (better-sqlite3)
+      transitions(prefix, suffix, count, channel)
+      starters(prefix, channel)
+      Weighted random generation
+      Seed: LIKE + prefix filter
+      Channel isolation"]:::innerNode
+    rperf["~300K msg/s · Vacuum every 500K
+      6.9M pre-trained transitions
+      9 CLI tools"]:::subNode
+  end
+  style rubyGroup fill:#c0392b,color:#fff
+
+  %% ─── KRYSTAL ───
+  subgraph krystalGroup["Krystal (llama.cpp)"]
+    kexec["llama-server v9682
+      taskset CPU pinning
+      PM2 orchestration
+      OpenAI-compatible API"]:::innerNode
+    ksmall["Small Mode (FUTILE)
+      Luna-Protocol 1.5B Q4_K_M
+      :3124 · CPU 0 · ~3.5 GB"]:::innerNode
+    klarge["Large Mode (INTERESSANT)
+      Discord-Hermes-8B Q2_K
+      :3125 · CPU 0,1 · ~6 GB"]:::innerNode
+    kparams["Context: 8192 · Threads: auto
+      Slots: 1 · KV reuse: 256
+      CPU-only inference"]:::subNode
+  end
+  style krystalGroup fill:#8e44ad,color:#fff
+
+  %% ═══════════════════════════════════════════════════
+  %%  DATA FLOW
+  %%  ==>  main request/response pipeline
+  %%  -->  secondary / config flows
+  %%  -.->  async / fire-and-forget / background
+  %%  ~~~  layout only
+  %% ═══════════════════════════════════════════════════
+
+  %% ── MAIN PIPELINE (thick arrows) ──
+  discord == user message ==> jclient
+  matrix == user message ==> pmx
+
+  jclient == MessageEvent ==> jhandlers
+  jhandlers == "WS :3126" ==> ews
+
+  pmx == MessageEvent ==> psycle
+  psycle == "WS :3126" ==> ews
+
+  ews == dispatch ==> etrigger
+  etrigger == respond? ==> ebehave
+
+  ebehave == annotations ==> eclient
+  eclient == askStream() ==> sapi
+
+  sapi == POST /v1/respond ==> spipeline
+  spipeline == FUTILE ==> ksmall
+  spipeline == INTERESSANT ==> klarge
+
+  ksmall == LLM response ==> kexec
+  klarge == LLM response ==> kexec
+
+  spipeline == response text ==> sapi
+
+  sapi == RespondCommand ==> ews
+
+  ews == RespondCommand ==> jresp
+  ews == RespondCommand ==> presp
+
+  jresp == message posted ==> jclient
+  presp == message posted ==> pmx
+
+  %% ── RUBY ALTERNATIVE PATH ──
+  eclient -.->|Ruby route| rhttp
+  rhttp -.->|generated text| eclient
+
+  %% ── ASYNC / BACKGROUND (dotted) ──
+  eclient -.->|train| rhttp
+  ebehave -.->|spontaneous loop| ews
+
+  %% ── EXCEPTION PATH ──
+  spipeline -.->|degenerate retry| sdeg
+  sdeg -.->|retry| spipeline
+
+  %% ── SECONDARY FLOWS ──
+  rhttp -->|train-batch| rtoken
+  rhttp -->|generate| rchain
+  jws -->|voice| jtts
+
+  subgraph legend["Legend"]
+    lDir["==>  Main pipeline (user message → LLM → response)"]:::innerNode
+    lSec["-->  Secondary / config flow"]:::innerNode
+    lAsync["-.->  Async / fire-and-forget / background"]:::innerNode
+    lRetry["-.->  Exception / retry path"]:::innerNode
+  end
+  style legend fill:#f8f9fa,color:#2c3e50,stroke:#dee2e6

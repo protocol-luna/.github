@@ -1,0 +1,35 @@
+flowchart TD
+    subgraph TRAINING["Training Flow"]
+        T_START(["POST /train or /train-batch"]) --> T_TOKENIZE["Tokenizer<br/>1. strip URLs /https?:\\/\\/\\S+/<br/>2. strip mentions /<@!?\\d+>/<br/>3. strip emoji /<a?:\\w+:\\d+>/<br/>4. keep \\w\\s' + accented Latin<br/>5. split whitespace → filter empty"]
+        T_TOKENIZE --> T_CHECK{"words.length ≥ order+1 ?"}
+        T_CHECK -->|"no"| T_SKIP["❌ skip (too short)"]
+        T_CHECK -->|"yes"| T_STARTER["INSERT OR IGNORE INTO starters<br/>(first order words → prefix)"]
+        T_STARTER --> T_SLIDE["slide window across words<br/>prefix = words[i..i+order-1]<br/>suffix = words[i+order]"]
+        T_SLIDE --> T_UPSERT["UPSERT INTO transitions<br/>count = count + 1<br/>(on conflict)"]
+        T_UPSERT --> T_NEXT{"more windows ?"}
+        T_NEXT -->|"yes"| T_SLIDE
+        T_NEXT -->|"no"| T_DONE["✅ trained"]
+    end
+
+    subgraph GENERATION["Generation Flow"]
+        G_START(["POST /generate"]) --> G_SEED{"seed provided ?"}
+        G_SEED -->|"yes"| G_PICK["pickPrefix()<br/>LIKE 'firstWord%'<br/>filter starts with seed<br/>random match"]
+        G_SEED -->|"no"| G_RANDOM["random starter (all channels<br/>or filtered by channel_id)"]
+        G_PICK --> G_LOOP
+        G_RANDOM --> G_LOOP
+
+        G_LOOP["loop i = 0..maxLength"] --> G_QUERY["query transitions<br/>WHERE prefix = current (last order words)<br/>ordered by suffix"]
+        G_QUERY --> G_FOUND{"rows found ?"}
+        G_FOUND -->|"no"| G_DONE["✅ return joined words"]
+        G_FOUND -->|"yes"| G_WEIGHTED["weighted random selection<br/>total = SUM(count)<br/>roll = random(0, total)<br/>subtract each count until ≤0"]
+        G_WEIGHTED --> G_APPEND["append suffix to result<br/>slide window"]
+        G_APPEND --> G_AGAIN{"i < maxLength ?"}
+        G_AGAIN -->|"yes"| G_LOOP
+        G_AGAIN -->|"no"| G_DONE
+    end
+
+    subgraph STORAGE["SQLite Schema"]
+        DB_TRANS["transitions(prefix TEXT, suffix TEXT,<br/>count INTEGER, channel_id TEXT)<br/>PK: (prefix, suffix, channel_id)"]
+        DB_START["starters(prefix TEXT, channel_id TEXT)<br/>PK: (prefix, channel_id)"]
+        DB_INDEX["idx_trans_prefix ON transitions(prefix)"]
+    end

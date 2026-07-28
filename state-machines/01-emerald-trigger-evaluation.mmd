@@ -1,0 +1,40 @@
+flowchart TD
+    START(["MessageEvent received"]) --> SELF{"user == botUserId ?"}
+    SELF -->|"yes"| SKIP_SELF["❌ ignore (self)"]
+    SELF -->|"no"| CMD_STOP{"text starts with '-stop' ?"}
+    CMD_STOP -->|"yes"| STOP["✅ reason='stop'<br/>setPaused(true)"]
+    CMD_STOP -->|"no"| CMD_START{"text starts with '-start' ?"}
+    CMD_START -->|"yes"| START_CMD["✅ reason='start'<br/>setPaused(false)"]
+    CMD_START -->|"no"| CMD_CLEAR{"text starts with '-clear' ?"}
+    CMD_CLEAR -->|"yes"| CLEAR["✅ reason='clear'"]
+    CMD_CLEAR -->|"no"| MENTION{"mentions botUser ?"}
+    MENTION -->|"yes"| MENTION_OK["✅ reason='mention'<br/>unpause"]
+    MENTION -->|"no"| IS_DM{"isDM && replyInDM ?"}
+    IS_DM -->|"yes"| DM_OK["✅ reason='dm'"]
+    IS_DM -->|"no"| IS_PAUSED{"state.paused ?"}
+    IS_PAUSED -->|"yes"| PAUSED["❌ ignore (paused)"]
+    IS_PAUSED -->|"no"| COOLDOWN{"isOnCooldown(channel) ?"}
+    COOLDOWN -->|"yes"| COOLDOWNED["❌ ignore (cooldown)"]
+    COOLDOWN -->|"no"| NAME{"contains bot name<br/>or configured name ?"}
+    NAME -->|"yes"| NAME_OK["✅ reason='name'<br/>markReplied()"]
+    NAME -->|"no"| KEYWORD{"contains keyword<br/>&& roll < keyword_chance ?"}
+    KEYWORD -->|"yes"| KEYWORD_OK["✅ reason='keyword'"]
+    KEYWORD -->|"no"| FOLLOWUP{"canFollowUp<br/>(bot last, <60s, <3) ?"}
+    FOLLOWUP -->|"yes"| FOLLOWUP_OK["✅ reason='follow-up'"]
+    FOLLOWUP -->|"no"| RANDOM{"roll < random_chance<br/>(1.5%) ?"}
+    RANDOM -->|"yes"| RANDOM_OK["✅ reason='random'"]
+    RANDOM -->|"no"| IGNORE["❌ ignore (fallthrough)"]
+
+    style STOP fill:#8f8,stroke:#333
+    style START_CMD fill:#8f8,stroke:#333
+    style CLEAR fill:#8f8,stroke:#333
+    style MENTION_OK fill:#8f8,stroke:#333
+    style DM_OK fill:#8f8,stroke:#333
+    style NAME_OK fill:#8f8,stroke:#333
+    style KEYWORD_OK fill:#8f8,stroke:#333
+    style FOLLOWUP_OK fill:#8f8,stroke:#333
+    style RANDOM_OK fill:#8f8,stroke:#333
+    style SKIP_SELF fill:#f88,stroke:#333
+    style PAUSED fill:#f88,stroke:#333
+    style COOLDOWNED fill:#f88,stroke:#333
+    style IGNORE fill:#f88,stroke:#333

@@ -1,0 +1,27 @@
+flowchart TD
+    START(["start.sh <mode>"]) --> MODE{argument}
+
+    MODE -->|"small"| SMALL_CFG["Defaults:<br/>model = Luna 1.5B Q4_K_M (941 MB)<br/>port = 3124<br/>CPU = 0<br/>RAM ≈ 3.5 GB"]
+    MODE -->|"large"| LARGE_CFG["Defaults:<br/>model = Hermes-8B Q2_K (3.3 GB)<br/>port = 3125<br/>CPU = 0,1<br/>RAM ≈ 6 GB"]
+
+    SMALL_CFG --> ENV_VARS["Read env overrides<br/>KRYSTAL_MODEL_PATH<br/>KRYSTAL_PORT<br/>KRYSTAL_CPU_AFFINITY<br/>KRYSTAL_N_THREADS<br/>KRYSTAL_N_CTX<br/>KRYSTAL_N_SLOTS<br/>(also legacy LLM_* namespace)"]
+    LARGE_CFG --> ENV_VARS
+
+    ENV_VARS --> THREADS{"KRYSTAL_N_THREADS == 'auto' ?"}
+    THREADS -->|"yes"| AUTO_THREAD["count CPU cores from<br/>affinity mask → N_THREADS"]
+    THREADS -->|"no"| USE_CONFIG
+
+    AUTO_THREAD --> USE_CONFIG
+    USE_CONFIG --> PM2["npx pm2 delete previous<br/>npx pm2 start taskset<br/>  -c <CPU_AFFINITY><br/>  ./bin/llama/llama-server"]
+
+    PM2 --> LLAMA_ARGS["llama-server flags<br/>-m <model><br/>-t <threads><br/>-c 8192 (context)<br/>-np 1 (slots)<br/>--slot-prompt-similarity 0<br/>--cache-reuse 256<br/>--host 127.0.0.1<br/>--port <port><br/>--no-slots"]
+
+    LLAMA_ARGS --> RUNNING["✅ Krystal running on :3124 / :3125"]
+    RUNNING --> SAPPHIRE["Sapphire routes:<br/>FUTILE → generic_url (:3124)<br/>INTERESSANT → semantic_url (:3125)"]
+
+    RUNNING --> PM2_SAVE["npx pm2 save"]
+    PM2_SAVE --> STATUS["pm2 status"]
+
+    subgraph CLEANUP["Cleanup"]
+        CLEAN["cleanup.sh"] --> DELETE["pm2 delete krystal-small<br/>pm2 delete krystal-large<br/>pm2 delete llm-server (legacy)"]
+    end

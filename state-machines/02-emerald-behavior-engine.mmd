@@ -1,0 +1,58 @@
+flowchart TD
+    START(["Trigger decided: shouldRespond=true"]) --> SLEEP{"evaluateSleep()"}
+
+    SLEEP -->|"null (awake)"| FATIGUE
+    SLEEP -->|"slow"| FATIGUE
+    SLEEP -->|"short"| FATIGUE
+    SLEEP -->|"sleep"| ONLY_MENTION{"mention or dm ?"}
+    ONLY_MENTION -->|"no"| DROP["❌ silently ignore"]
+    ONLY_MENTION -->|"yes"| FATIGUE
+
+    FATIGUE --> TOPIC{"topicFatigue<br/>freq ≥ threshold ?"}
+    TOPIC -->|"yes"| FATIGUED["apply fatigue<br/>delay mult ×2-5<br/>ignore bonus +15%"]
+    TOPIC -->|"no"| FATIGUE_OK
+
+    FATIGUED --> FORGET
+    FATIGUE_OK --> FORGET
+
+    FORGET{"roll < forgetChance<br/>(3%, not DM/mention) ?"}
+    FORGET -->|"yes"| FORGOT["send ForgotCommand<br/>❌ dropped"]
+    FORGET -->|"no"| DELAY
+
+    DELAY --> COMPUTE["computeDelay(reason, text, inactivity, sleep, fatigue)"]
+    COMPUTE --> DELAY_RESULT["base delay [min,max]<br/>× reading factor (len/500, cap ×3)<br/>× inactivity warmup (×1-5)<br/>× sleep slow (×3-5)<br/>× fatigue (×1-5)<br/>× jitter (0.5-2.0)"]
+
+    DELAY_RESULT --> REACT{"shouldReact() ?"}
+    REACT -->|"yes"| REACT_PLAN["schedule ReactionPlan"]
+    REACT -->|"no"| HESITATE
+
+    REACT_PLAN --> HESITATE
+    HESITATE{"shouldHesitate(15%) ?"}
+    HESITATE -->|"yes"| HESITATE_WORD["prepend hesitation word"]
+    HESITATE -->|"no"| BURST
+
+    HESITATE_WORD --> BURST
+    BURST{"shouldBurst(15%) ?"}
+    BURST -->|"yes"| BURST_PLAN["plan 2-3 fragments<br/>with delays"]
+    BURST -->|"no"| REPLY_STYLE
+
+    BURST_PLAN --> REPLY_STYLE
+    REPLY_STYLE --> PICK["pickReplyStyle()<br/>active: weighted (50/15/30/5)<br/>cold: 70% quote, 20% quote+ping, 10% none"]
+    PICK --> TYPO
+
+    TYPO {"applyTypo(6%) ?"}
+    TYPO -->|"yes"| TYPO_DONE["replace letter with<br/>keyboard neighbor"]
+    TYPO -->|"no"| SWAP
+
+    TYPO_DONE --> SWAP
+    SWAP {"applyLetterSwap(4%) ?"}
+    SWAP -->|"yes"| SWAP_DONE["swap adjacent letters"]
+    SWAP -->|"no"| VOICE
+
+    SWAP_DONE --> VOICE
+    VOICE {"voiceMessageChance(12%) ?"}
+    VOICE -->|"yes"| VOICE_FLAG["set voice: true"]
+    VOICE -->|"no"| DONE
+
+    VOICE_FLAG --> DONE
+    DONE(["RespondCommand ready"])
